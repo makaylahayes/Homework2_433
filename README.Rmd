@@ -1,0 +1,76 @@
+---
+title: "Homework2_433"
+author: "Makayla Hayes"
+date: "2/11/2021"
+output: github_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(nycflights13)
+library(lubridate)
+```
+How many flights have a missing dep_time? 
+What other variables are missing? 
+What might these rows represent?
+```{r}
+per<-flights %>% 
+  filter(is.na(dep_time))
+head(per)
+nrow(per)
+
+```
+Other variables that were missing are dep_delay, arr_time, arr_delay, air_time.I think these rows represent the flights that were scheduled and then canceled for some reason and never actually took off. 
+
+Currently dep_time and sched_dep_time are convenient to look at, 
+but hard to compute with because they’re not really continuous numbers. 
+Convert them to a more convenient representation of number of minutes since midnight.
+```{r}
+flights %>%
+  mutate(dep_time,
+         dep_time=((dep_time%/%100)*60)+(dep_time%%100))%>%
+  mutate(sched_dep_time,
+         sched_dep_time=(floor(sched_dep_time/100)*60)+(sched_dep_time%%100))
+
+```
+
+Look at the number of cancelled flights per day. Is there a pattern?
+Is the proportion of cancelled flights related to the average delay? 
+Use multiple dyplr operations, all on one line, concluding with `ggplot(aes(x= ,y=)) + geom_point()’
+```{r}
+flights%>%
+  mutate(day_of_year = yday(time_hour))%>%
+  group_by(day_of_year)%>%
+  summarise(cancelled=sum(is.na(dep_time)))%>%
+  ggplot(aes(x=day_of_year,y=cancelled))+geom_point() + labs(title = "Numvber of Cancelled Flights vs Day of Year", x="Day of Year",y="Cancelled Flights")
+```
+
+```{r}
+ flights %>%
+ mutate(day_of_year = yday(time_hour)) %>% 
+ group_by(day_of_year) %>% 
+summarise(cancelled=sum(is.na(dep_time)),
+          avg_delay=mean(dep_delay,na.rm = T),
+          total=(sum(!is.na(dep_time))+cancelled),
+          cancel_prop=(cancelled/total))%>%
+ggplot(aes(x=day_of_year,y=cancel_prop,color=avg_delay))+geom_point()+scale_colour_gradient(low="blue",high = "red")+labs(title = "Proportion of Cancelled Flights vs Day of Year", x="Day of Year",y="Cancelled Flights")
+
+
+
+```
+This graph shows the Proportion of cancelled flights per day and then the color shows the average departure delay time for that day. There is no clear realationship between cancelled flights and average departure delay.
+
+```{r}
+ flights %>%
+ mutate(day_of_year = yday(time_hour)) %>% 
+ group_by(day_of_year) %>% 
+summarise(cancelled=sum(is.na(dep_time)),
+          avg_delay=mean(dep_delay,na.rm = T),
+          total=(sum(!is.na(dep_time))+cancelled),
+          cancel_prop=(cancelled/total))%>%
+ggplot(aes(x=avg_delay,y=cancel_prop))+geom_point()+labs(title = "Proportion of Cancelled Flights vs AverageDelay", x="Average Departure Delay",y="Cancelled Flights")
+```
+This graph plots the proportion of cancelled flights with the average departure delay. Both are per day of the year measurmenst. There seems to be some of a trend where the greater delay the more flights cancelled. Saying that there is also a lot of outliers and no finite trend. 
+
+https://github.com/makaylahayes/Homework2_433
